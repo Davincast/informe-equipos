@@ -41,11 +41,11 @@
 </head>
 <body class="bg-bg text-ink h-screen overflow-hidden flex flex-col">
 
-<!-- LOADER SCREEN -->
-<div id="loaderScreen" class="h-full flex flex-col items-center justify-center px-4">
+<!-- PANTALLA DE CARGA OPCIONAL (OCULTA POR DEFECTO) -->
+<div id="loaderScreen" class="hidden h-full flex flex-col items-center justify-center px-4">
   <div class="max-w-md w-full text-center">
     <h1 class="text-2xl font-bold text-ink mb-2">Informe Ejecutivo de Equipos</h1>
-    <p class="text-sub text-xs mb-6">Carga el archivo Excel/CSV para generar el panel en una sola página.</p>
+    <p class="text-sub text-xs mb-6">Carga un nuevo archivo Excel/CSV para actualizar el panel.</p>
 
     <label id="dropZone" for="fileInput" class="block border-2 border-dashed border-border rounded-xl bg-panel hover:border-cyan/60 transition-all p-8 cursor-pointer">
       <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" class="hidden" />
@@ -54,11 +54,13 @@
     </label>
 
     <div id="loadError" class="hidden mt-3 text-xs text-red bg-red/10 border border-red/30 rounded p-2"></div>
+    
+    <button id="cancelLoadBtn" class="mt-4 text-xs text-sub underline hover:text-ink">Volver al panel con datos incrustados</button>
   </div>
 </div>
 
-<!-- DASHBOARD (1 SINGLE PAGE, NO SCROLL EXTERNO) -->
-<div id="dashboard" class="hidden h-full w-full flex flex-col p-2 gap-2 overflow-hidden">
+<!-- DASHBOARD PRINCIPAL (VISIBLE DE ENTRADA) -->
+<div id="dashboard" class="h-full w-full flex flex-col p-2 gap-2 overflow-hidden">
 
   <!-- Header / Filtros -->
   <header class="flex items-center justify-between bg-panel2 border border-border px-3 py-1.5 rounded-lg flex-shrink-0">
@@ -81,11 +83,11 @@
         <select id="filterMes" class="text-xs bg-panel border border-border rounded px-2 py-1 text-ink focus:outline-none focus:border-cyan/60"></select>
       </div>
 
-      <button id="resetBtn" class="text-xs px-2 py-1 rounded border border-border bg-panel hover:border-cyan/60 text-sub transition-colors">Cambiar archivo</button>
+      <button id="resetBtn" class="text-xs px-2 py-1 rounded border border-border bg-panel hover:border-cyan/60 text-sub transition-colors">Cargar otro archivo</button>
     </div>
   </header>
 
-  <!-- Fila 1 (Fija): 9 KPIs -->
+  <!-- Fila 1: 9 KPIs -->
   <section class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-1.5 flex-shrink-0">
     <div class="bg-panel border border-border rounded-lg p-1.5 shadow-sm">
       <p class="text-[10px] text-sub uppercase mono font-medium">Equipos Únicos</p>
@@ -137,16 +139,10 @@
     </div>
   </section>
 
-  <!-- Fila 2 (Flexible): Donut + Tabla Cantidad Equipos + Diagnóstico de Varados -->
+  <!-- Fila 2: Donut + Tabla Cantidad Equipos + Diagnóstico de Varados -->
   <section class="grid grid-cols-1 md:grid-cols-10 gap-2 flex-1 min-h-0">
     <div class="md:col-span-4 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
-      <div class="flex items-center justify-between mb-1 flex-shrink-0">
-        <h3 class="font-semibold text-xs text-ink">Distribución de Horas Totales <span class="text-[9px] text-sub font-normal">(clic en un segmento para filtrar todo el panel)</span></h3>
-        <div id="tipoFilterBadge" class="hidden items-center gap-1.5">
-          <span class="badge bg-cyan/10 text-cyan border border-cyan/30">Filtrado por: <span id="tipoFilterName" class="mono"></span></span>
-          <button id="clearTipoFilter" class="text-[10px] text-red hover:underline font-medium">Quitar ✕</button>
-        </div>
-      </div>
+      <h3 class="font-semibold text-xs text-ink mb-1 flex-shrink-0">Distribución de Horas Totales</h3>
       <div class="flex-1 relative min-h-0">
         <canvas id="chartDonut"></canvas>
       </div>
@@ -196,32 +192,11 @@
     </div>
   </section>
 
-  <!-- Fila 3 (Flexible): Resumen por Equipo (Eje X = Equipo) + Horas por Semana -->
-  <section class="grid grid-cols-1 lg:grid-cols-12 gap-2 flex-1 min-h-0">
-    <div class="lg:col-span-8 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
-      <div class="flex items-center justify-between mb-1 flex-shrink-0">
-        <h3 class="font-semibold text-xs text-ink">Resumen por Equipo <span class="text-[9px] text-sub font-normal">(clic en la barra naranja de Varado para filtrar todo el panel)</span></h3>
-        <div id="equipoFilterBadge" class="hidden items-center gap-1.5">
-          <span class="badge bg-purple/10 text-purple border border-purple/30">Filtrado por equipo: <span id="equipoFilterName" class="mono"></span></span>
-          <button id="clearEquipoFilter" class="text-[10px] text-red hover:underline font-medium">Quitar filtro ✕</button>
-        </div>
-      </div>
-      <div class="flex-1 relative min-h-0">
-        <canvas id="chartEquipo"></canvas>
-      </div>
-    </div>
-
-    <div class="lg:col-span-4 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
-      <div class="flex items-center justify-between mb-1 flex-shrink-0">
-        <h3 class="font-semibold text-xs text-ink">%Utilización y % Disponibilidad por Semana <span class="text-[9px] text-sub font-normal">(clic en un punto para filtrar por esa semana)</span></h3>
-        <div id="semanaFilterBadge" class="hidden items-center gap-1.5">
-          <span class="badge bg-cyan/10 text-cyan border border-cyan/30">Semana: <span id="semanaFilterName" class="mono"></span></span>
-          <button id="clearSemanaFilter" class="text-[10px] text-red hover:underline font-medium">Quitar ✕</button>
-        </div>
-      </div>
-      <div class="flex-1 relative min-h-0">
-        <canvas id="chartSemana"></canvas>
-      </div>
+  <!-- Fila 3: Resumen por Clase de Equipo -->
+  <section class="bg-panel border border-border rounded-lg p-2 flex flex-col flex-1 min-h-0 shadow-sm">
+    <h3 class="font-semibold text-xs text-ink mb-1 flex-shrink-0">Resumen por Clase de Equipo</h3>
+    <div class="flex-1 relative min-h-0">
+      <canvas id="chartClase"></canvas>
     </div>
   </section>
 
@@ -233,23 +208,150 @@
   const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   const COLORS = { prod:'#0891B2', disp:'#059669', varado:'#EA580C' };
 
+  // =========================================================================
+  // PEGA TU DATOS DE EXCEL AQUÍ EN FORMATO JSON ENTRE LOS CORCHETES [ let
+    Origen = Excel.Workbook(Web.Contents("https://estymaestudiosymanejos.sharepoint.com/sites/CML2/Documentos%20compartidos/CML-INICIAL/7.MAQUINARIA%20Y%20EQUIPO-CML/15_Teams/Listado%20Maestro%20Equipos%202026.xlsx"), null, true),
+    Tabla4_Table = Origen{[Item="Tabla4",Kind="Table"]}[Data],
+    #"Tipo cambiado" = Table.TransformColumnTypes(Tabla4_Table,{{"C", type text}, {"FT", type text}, {"G", type text}, {"N", Int64.Type}, {"ESTADO", type text}, {"PROPIETARIO", type text}, {"UBICACIÓN", type text}, {"CODIGO INTERNO", type text}, {"DESCRIPCION", type text}, {"MARCA ", type text}, {"MODELO  O  LINEA", type any}, {"SERIE CHASIS", type any}, {"AR CHASIS", type any}, {"AÑO", Int64.Type}, {"COLOR", type text}, {"PLACA", type text}, {"FECHA   COMPRA", type date}, {"MANIFIESTO EQ", type any}, {"MODELO AÑO", type text}, {"TEL ASEGURADORA", type any}, {"MARCA", type text}, {"MODELO", type any}, {"SERIE", type any}, {"ARREGLO2", type any}, {"POTENCIA", type any}, {"TIPO COMBUSTIBLE ", type any}, {"CONSUMO /H", type any}, {"CALIBRACION DE VALVULAS ADMISION", type any}, {"CALIBRACION DE VALVULAS ESCAPE", type any}, {"BOMBA HCA", type any}, {"MOTOR HCO", type any}, {"TRANSMISION", type any}, {"DIFERENCIAL D", type any}, {"DIFERENCIAL C", type any}, {"DIFERENCIAL T", type any}, {"LLANTA DELANTERA", type any}, {"PRESION DE INFLADO DEL", type any}, {"LLANTA TRASERA", type any}, {"PRESION DE INFLADO TRA", type any}, {"COMPRESOR", type any}, {"MOTOR ELECTRICO", type any}, {"POTENCIA MOTOR ELECTRICO", type any}, {"VOL. SISTEMA ELECTRICO", type any}, {"BATERIAS", type any}, {"CANT", type any}, {"MOTOR DE ARRANQUE", type any}, {"ALTERNADOR", type any}, {"LARGO ", type any}, {"ANCHO ", type any}, {"ALTURA ", type any}, {"CAPACIDAD", type any}, {"PESO", type any}, {"VOLUMEN", type any}, {"BASE", type any}, {"CANT2", type any}, {"DIENTES", type any}, {"CANT3", type any}, {"PINES", type any}, {"CANT5", type any}, {"RETENEDORES", type any}, {"CANT7", type text}, {"TUERCAS", type any}, {"CANT9", type any}, {"TORNILLOS ", type any}, {"CANT10", type any}, {"SOBREESQUINEROS", type any}, {"CANT12", type text}, {"TUERCAS2", type any}, {"CANT14", type any}, {"TORNILLOS", type any}, {"CANT16", type any}, {" CUCHILLAS", type any}, {"CANT18", type any}, {"TUERCAS3", type any}, {"CANT20", type any}, {"TORNILLOS2", type any}, {"CANT22", type any}, {"ESCARIFICADOR", type any}, {"CANT24", type text}, {"SHANK", type text}, {"CANT2410", type text}, {"ESQUINERO DERECHO", type text}, {"CANT248", type any}, {"ESQUINERO IZQUIERDO", type text}, {"CANT26", type any}, {"TUERCA", type text}, {"CANT28", type text}, {"TORNILLO", type text}, {"CANT242", type text}, {"MOTOR", type any}, {"CANT4", type any}, {"F/ 1º AIRE", type any}, {"CANT15", type any}, {"F/ 2º AIRE", type any}, {"CANT17", type any}, {"F/ AIRE ACON35", type any}, {"CANT6", type any}, {"F/ NEUMATICO", type any}, {"CANT36", type any}, {"F/COMBUSTIBLE1", type any}, {"CANT8", type any}, {"F/COMBUSTIBLE2", type any}, {"CANT11", type any}, {"F/SEPARADOR", type any}, {"CANT21", type any}, {"F/ HIDRAULICO/TANQUE", type any}, {"CANT19", type any}, {"LINEA", type any}, {"CANT30", type any}, {"F/RETORNO", type any}, {"CANT23", type any}, {"F/ TRANSMISION", type any}, {"CANT25", type any}, {"CAJA", type any}, {"CANT.46", type any}, {"SERVO", type any}, {"CANT13", type any}, {"CAJA DE REENVIO", type any}, {"CANT29", type any}, {"REDUCTOR DE GIRO2", type any}, {"CANT62", type any}, {"COMPRESOR2", type any}, {"CANT63", type any}, {"F/MANDOS FINALES", type any}, {"CANT57", type text}, {"TANDEM", type any}, {"CANT58", type any}, {"F/ DIRECION", type any}, {"CANT31", type any}, {"DIFERENCIAL DELANTERO", type any}, {"CANT27", type any}, {"DIFERENCIAL CENTRAL", type text}, {"CANT2722", type any}, {"DIFERENCIAL TRASERO", type text}, {"CANT2723", type text}, {"RODILLO VIBRATORIO", type text}, {"CANT2724", type text}, {"REFRIGERANTE", type any}, {"CANT2725", type any}, {"ACEITE MOTOR", type any}, {"CANT32", type any}, {"COMBUSTIBLE", type text}, {"CANT33", type any}, {"ACEITE HCO", type any}, {"CANT272516", type any}, {"ACEITE  TRANSMICION", type any}, {"CANT38", type any}, {"ACEITE CAJA", type text}, {"CANT272512", type any}, {"ACEITE SERVO", type text}, {"CANT272510", type text}, {"ACEITE CAJA REENVIO", type text}, {"CANT27258", type text}, {"ACEITE REDUCTOR DE GIRO", type text}, {"CANT27256", type any}, {"ACEITE COMPRESOR", type text}, {"CANT27254", type any}, {"ACEITE MANDOS FINALES", type any}, {"CANT27252", type any}, {"ACEITE TANDEM", type text}, {"CANT34", type text}, {"ACEITE DIRECCION", type text}, {"CANT35", type any}, {"ACEITE DIF DELANTERO", type any}, {"CANT37", type any}, {"ACEITE DIF CENTRAL", type any}, {"CANT39", type any}, {"ACEITE DIF TRASERO", type any}, {"CANT40", type any}, {"ACEITE RODILLO VIBRATORIO", type text}, {"CANT41", type text}, {"REFRIGERANTE3", type any}, {"CANT42", type any}, {"DATOS ADICIONALES", type any}, {"DATOS ADICIONALES2", type any}, {"DATOS ADICIONALES3", type any}, {"DATOS ADICIONALES4", type text}, {"DATOS ADICIONALES5", type any}, {"DATOS ADICIONALES6", type any}, {"DATOS ADICIONALES7", type any}, {"DATOS ADICIONALES8", type any}, {"MANUAL DE SERVICIO", type text}, {"MANUAL DE PARTES", type text}, {"MANUAL DE MTTO", type text}, {"CD", type any}, {"MANIFIESTO MT", type text}, {"DESTINO", Int64.Type}}),
+    #"Consultas combinadas" = Table.NestedJoin(#"Tipo cambiado", {"CODIGO INTERNO"}, Analisis, {"equipo"}, "Analisis", JoinKind.LeftOuter),
+    #"Se expandió Analisis" = Table.ExpandTableColumn(#"Consultas combinadas", "Analisis", {"bodega"}, {"Analisis.bodega"}),
+    #"Filas filtradas" = Table.SelectRows(#"Se expandió Analisis", each ([Analisis.bodega] = "7101 - EPC - VIA LACTEA")),
+    #"Columnas quitadas" = Table.RemoveColumns(#"Filas filtradas",{"C", "FT", "G", "N", "PROPIETARIO", "UBICACIÓN", "SERIE CHASIS", "AR CHASIS", "MARCA ", "MODELO  O  LINEA", "AÑO", "ESTADO", "COLOR", "PLACA", "FECHA   COMPRA", "MANIFIESTO EQ", "MODELO AÑO", "TEL ASEGURADORA", "MARCA", "ARREGLO2", "POTENCIA", "TIPO COMBUSTIBLE ", "CONSUMO /H", "CALIBRACION DE VALVULAS ADMISION", "CALIBRACION DE VALVULAS ESCAPE", "DESTINO", "Analisis.bodega", "CD", "MANIFIESTO MT", "DATOS ADICIONALES8", "MANUAL DE SERVICIO", "MANUAL DE PARTES", "MANUAL DE MTTO", "DATOS ADICIONALES4", "DATOS ADICIONALES5", "DATOS ADICIONALES6", "DATOS ADICIONALES7", "DATOS ADICIONALES", "DATOS ADICIONALES2", "DATOS ADICIONALES3", "SERIE", "DIFERENCIAL D", "DIFERENCIAL C", "DIFERENCIAL T", "LLANTA DELANTERA", "LLANTA TRASERA", "COMPRESOR", "MOTOR ELECTRICO", "POTENCIA MOTOR ELECTRICO", "VOL. SISTEMA ELECTRICO", "BATERIAS", "CANT", "MOTOR DE ARRANQUE", "ALTERNADOR", "LARGO ", "ANCHO ", "ALTURA ", "CAPACIDAD", "PESO", "VOLUMEN", "BASE", "CANT2", "DIENTES", "CANT3", "PINES", "CANT5", "RETENEDORES", "CANT7", "TUERCAS", "CANT9", "TORNILLOS ", "CANT10", "SOBREESQUINEROS", "CANT12", "TUERCAS2", "CANT14", "TORNILLOS", "CANT16", " CUCHILLAS", "CANT18", "TUERCAS3", "CANT20", "TORNILLOS2", "CANT22", "ESCARIFICADOR", "CANT24", "SHANK", "CANT2410", "ESQUINERO DERECHO", "CANT248", "ESQUINERO IZQUIERDO", "CANT26", "TUERCA", "CANT28", "TORNILLO", "CANT242", "MOTOR", "BOMBA HCA", "MOTOR HCO", "TRANSMISION", "PRESION DE INFLADO DEL", "PRESION DE INFLADO TRA", "CANT4",  "ACEITE MOTOR", "CANT32", "COMBUSTIBLE", "CANT33", "ACEITE HCO", "CANT272516", "ACEITE  TRANSMICION", "CANT38", "ACEITE CAJA", "CANT272512", "ACEITE SERVO", "CANT272510", "ACEITE CAJA REENVIO", "CANT27258", "ACEITE REDUCTOR DE GIRO", "CANT27256", "ACEITE COMPRESOR", "CANT27254", "ACEITE MANDOS FINALES", "CANT27252", "ACEITE TANDEM", "CANT34", "ACEITE DIRECCION", "CANT35", "ACEITE DIF DELANTERO", "CANT37", "ACEITE DIF CENTRAL", "CANT39", "ACEITE DIF TRASERO", "CANT40", "ACEITE RODILLO VIBRATORIO", "CANT41", "REFRIGERANTE3", "CANT42"}),
+    #"Personalizada agregada" = Table.AddColumn(#"Columnas quitadas", "Personalizado", each
+
+let
+    Buscar = {
+        {"F/ 1º AIRE",[#"F/ 1º AIRE"]},
+        {"F/ 2º AIRE",[#"F/ 2º AIRE"]},
+        {"F/ AIRE ACON35",[#"F/ AIRE ACON35"]},
+        {"F/ NEUMATICO",[#"F/ NEUMATICO"]},
+        {"F/COMBUSTIBLE1",[#"F/COMBUSTIBLE1"]},
+        {"F/COMBUSTIBLE2",[#"F/COMBUSTIBLE2"]},
+        {"F/SEPARADOR",[#"F/SEPARADOR"]},
+        {"F/ HIDRAULICO/TANQUE",[#"F/ HIDRAULICO/TANQUE"]},
+        {"LINEA",[LINEA]},
+        {"F/RETORNO",[#"F/RETORNO"]},
+        {"F/ TRANSMISION",[#"F/ TRANSMISION"]},
+        {"CAJA",[CAJA]},
+        {"SERVO",[SERVO]},
+        {"CAJA DE REENVIO",[#"CAJA DE REENVIO"]},
+        {"REDUCTOR DE GIRO2",[REDUCTOR DE GIRO2]},
+        {"COMPRESOR2",[COMPRESOR2]},
+        {"F/MANDOS FINALES",[#"F/MANDOS FINALES"]},
+        {"TANDEM",[TANDEM]},
+        {"F/ DIRECION",[#"F/ DIRECION"]},
+        {"DIFERENCIAL DELANTERO",[#"DIFERENCIAL DELANTERO"]},
+        {"DIFERENCIAL CENTRAL",[#"DIFERENCIAL CENTRAL"]},
+        {"DIFERENCIAL TRASERO",[#"DIFERENCIAL TRASERO"]},
+        {"RODILLO VIBRATORIO",[#"RODILLO VIBRATORIO"]},
+        {"REFRIGERANTE",[REFRIGERANTE]}
+    },
+
+    Resultado =
+        List.Transform(
+            Buscar,
+            (f)=>
+
+                let
+
+                    Codigo = try Text.Upper(Text.From(f{1})) otherwise "",
+
+                    CodigoLimpio =
+                        Text.Replace(
+                        Text.Replace(
+                        Text.Replace(
+                        Text.Replace(Codigo,"-","")," ",""),"/",""),".",""),
+
+                    Coincidencias =
+                        try
+                            Table.SelectRows(
+                                inventario,
+                                each
+                                Text.Contains(
+                                    Text.Replace(
+                                    Text.Replace(
+                                    Text.Replace(
+                                    Text.Replace(
+                                    Text.Upper(Text.From([Descripcion])),
+                                    "-","")," ",""),"/",""),".",""),
+                                    CodigoLimpio
+                                )
+                            )
+                        otherwise
+                            #table({},{}),
+
+                    Stock =
+                        if Table.RowCount(Coincidencias)>0 then
+                            try Coincidencias{0}[stock] otherwise 0
+                        else
+                            0
+
+                in
+
+                    {f{0}, Stock}
+
+        )
+
+in
+
+    Record.FromList(
+        List.Transform(Resultado, each _{1}),
+        List.Transform(Resultado, each _{0})
+    )
+
+))
+in
+    #"Personalizada agregada"]
+  // =========================================================================
+  const INITIAL_DATA = [
+    {
+      "Descripción Centro": "EPC - VIA LACTEA",
+      "Equipo": "EQ-001",
+      "Clase": "Excavadora",
+      "des_tipo": "Producción",
+      "horas": 120,
+      "fecha": "2026-03-01",
+      "notas": ""
+    },
+    {
+      "Descripción Centro": "EPC - VIA LACTEA",
+      "Equipo": "EQ-001",
+      "Clase": "Excavadora",
+      "des_tipo": "Disponible",
+      "horas": 30,
+      "fecha": "2026-03-01",
+      "notas": ""
+    },
+    {
+      "Descripción Centro": "EPC - VIA LACTEA",
+      "Equipo": "EQ-002",
+      "Clase": "Cargador",
+      "des_tipo": "Varado",
+      "horas": 15,
+      "fecha": "2026-03-01",
+      "notas": "Falla en sistema hidráulico principal"
+    }
+  ];
+
   let RAW = [];
-  let TOTAL_FLOTA = 0;
   let chartDonut = null;
-  let chartEquipo = null;
-  let chartSemana = null;
-  let selectedEquipo = null;
-  let selectedTipo = null;
-  let selectedSemana = null;
+  let chartClase = null;
   const mesLabels = {};
 
   const $ = (id) => document.getElementById(id);
 
   Chart.register(ChartDataLabels);
 
+  // Inicialización automática
+  window.addEventListener('DOMContentLoaded', () => {
+    if (INITIAL_DATA && INITIAL_DATA.length > 0) {
+      processData(INITIAL_DATA);
+    }
+  });
+
   function normalizeStr(v){
     return String(v ?? '')
-      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .toLowerCase()
       .replace(/\s+/g, ' ')
       .trim();
@@ -278,28 +380,19 @@
     $('loaderScreen').classList.remove('hidden');
     clearLoadError();
     fileInput.value = '';
-    selectedEquipo = null;
-    selectedTipo = null;
-    selectedSemana = null;
+  });
+
+  $('cancelLoadBtn').addEventListener('click', () => {
+    if (RAW.length > 0) {
+      $('loaderScreen').classList.add('hidden');
+      $('dashboard').classList.remove('hidden');
+    } else {
+      processData(INITIAL_DATA);
+    }
   });
 
   window.addEventListener('resize', () => {
     if (!$('dashboard').classList.contains('hidden')) render();
-  });
-
-  $('clearEquipoFilter').addEventListener('click', () => {
-    selectedEquipo = null;
-    render();
-  });
-
-  $('clearTipoFilter').addEventListener('click', () => {
-    selectedTipo = null;
-    render();
-  });
-
-  $('clearSemanaFilter').addEventListener('click', () => {
-    selectedSemana = null;
-    render();
   });
 
   function handleFile(file){
@@ -324,14 +417,6 @@
     return isNaN(n) ? 0 : n;
   }
 
-  function getISOWeek(date){
-    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    const dayNum = d.getUTCDay() || 7;
-    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-  }
-
   function parseFecha(v){
     if (v instanceof Date && !isNaN(v)) return v;
     if (typeof v === 'number' && XLSX.SSF) {
@@ -346,8 +431,8 @@
   }
 
   function processData(json){
-    if (!json.length) {
-      showLoadError('El archivo no contiene datos.');
+    if (!json || !json.length) {
+      showLoadError('El conjunto de datos está vacío.');
       return;
     }
 
@@ -361,18 +446,11 @@
     const kHoras = findKey('horas');
     const kFecha = findKey('fecha');
     const kNotas = findKey('notas');
-    const kSemana = findKey('Semana');
-
-    // Mapeo flexible de columnas de horas si existen columnas explícitas
-    const kHorasDisp = findKey('Horas_Disponibles');
-    const kHorasProd = findKey('Horas_Producción');
-    const kHorasVarado = findKey('Horas_Varado');
 
     const rows = [];
     json.forEach(r => {
-      if (r[kCentro] && normalizeStr(r[kCentro]) !== normalizeStr(CENTRO_FIJO)) return;
+      if (normalizeStr(r[kCentro]) !== normalizeStr(CENTRO_FIJO)) return;
       const fecha = parseFecha(r[kFecha]);
-
       const equipo = String(r[kEquipo] ?? '').trim();
       if (!equipo) return;
 
@@ -380,101 +458,52 @@
       const mesLabel = fecha ? `${MESES[fecha.getMonth()]} ${String(fecha.getFullYear()).slice(-2)}` : 'Sin fecha';
       mesLabels[mesKey] = mesLabel;
 
-      const fechaDia = fecha ? `${fecha.getFullYear()}-${String(fecha.getMonth()+1).padStart(2,'0')}-${String(fecha.getDate()).padStart(2,'0')}` : null;
-
-      const semanaCruda = kSemana ? r[kSemana] : undefined;
-      let semana, semanaOrder;
-      if (semanaCruda !== undefined && String(semanaCruda).trim() !== '') {
-        semana = String(semanaCruda).trim();
-        const digitos = semana.match(/\d+/);
-        semanaOrder = fecha ? (fecha.getFullYear() * 100 + getISOWeek(fecha)) : (digitos ? parseInt(digitos[0], 10) : 0);
-      } else if (fecha) {
-        const isoWeek = getISOWeek(fecha);
-        semana = `Sem ${isoWeek}`;
-        semanaOrder = fecha.getFullYear() * 100 + isoWeek;
-      } else {
-        semana = 'Sin semana';
-        semanaOrder = 0;
-      }
-
-      // Si vienen columnas explícitas de Horas_Disponibles, Horas_Producción, Horas_Varado:
-      const valDisp = parseHoras(r[kHorasDisp]);
-      const valProd = parseHoras(r[kHorasProd]);
-      const valVarado = parseHoras(r[kHorasVarado]);
-
-      if (valDisp > 0 || valProd > 0 || valVarado > 0) {
-        if (valProd > 0) rows.push({ equipo, clase: String(r[kClase] ?? 'Sin Clase').trim() || 'Sin Clase', desTipo: 'Producción', horas: valProd, mesKey, mesLabel, fechaDia, semana, semanaOrder, notas: '' });
-        if (valDisp > 0) rows.push({ equipo, clase: String(r[kClase] ?? 'Sin Clase').trim() || 'Sin Clase', desTipo: 'Disponible', horas: valDisp, mesKey, mesLabel, fechaDia, semana, semanaOrder, notas: '' });
-        if (valVarado > 0) rows.push({ equipo, clase: String(r[kClase] ?? 'Sin Clase').trim() || 'Sin Clase', desTipo: 'Varado', horas: valVarado, mesKey, mesLabel, fechaDia, semana, semanaOrder, notas: String(r[kNotas] ?? '').trim() });
-      } else {
-        rows.push({
-          equipo,
-          clase: String(r[kClase] ?? 'Sin Clase').trim() || 'Sin Clase',
-          desTipo: String(r[kDesTipo] ?? '').trim(),
-          horas: parseHoras(r[kHoras]),
-          mesKey,
-          mesLabel,
-          fechaDia,
-          semana,
-          semanaOrder,
-          notas: String(r[kNotas] ?? '').trim()
-        });
-      }
+      rows.push({
+        equipo,
+        clase: String(r[kClase] ?? 'Sin Clase').trim() || 'Sin Clase',
+        desTipo: String(r[kDesTipo] ?? '').trim(),
+        horas: parseHoras(r[kHoras]),
+        mesKey,
+        mesLabel,
+        notas: String(r[kNotas] ?? '').trim()
+      });
     });
 
     if (!rows.length) {
-      showLoadError(`No se encontraron registros en el archivo. Revisa el formato de tus datos.`);
+      showLoadError(`No se encontraron registros que coincidan con el centro "${CENTRO_FIJO}".`);
       return;
     }
 
-    TOTAL_FLOTA = new Set(rows.map(r => r.equipo)).size;
-    RAW = agruparYCalcularHoras(rows);
+    RAW = rows;
     initFilters();
     $('loaderScreen').classList.add('hidden');
     $('dashboard').classList.remove('hidden');
     render();
   }
 
-  function agruparYCalcularHoras(rows){
-    // Si ya los datos vienen clasificados por tipo, agrupamos por tipo de manera estándar
-    const resultado = [];
-    rows.forEach(r => {
-      let tipoNorm = normalizeStr(r.desTipo);
-      let tipoFinal = 'Disponible';
-      if (tipoNorm.includes('prod')) tipoFinal = 'Producción';
-      else if (tipoNorm.includes('varad')) tipoFinal = 'Varado';
-      else if (tipoNorm.includes('disp')) tipoFinal = 'Disponible';
-
-      resultado.push({
-        ...r,
-        desTipo: tipoFinal
-      });
-    });
-    return resultado;
-  }
-
   function initFilters(){
-    const grupos = [...new Set(RAW.map(r => r.clase))].sort();
-    const selGrupo = $('filterGrupo');
-    selGrupo.innerHTML = '<option value="">Todos los Grupos</option>' + grupos.map(g => `<option value="${g}">${g}</option>`).join('');
-    selGrupo.onchange = () => { selectedEquipo = null; selectedTipo = null; selectedSemana = null; render(); };
-
     const meses = [...new Set(RAW.map(r => r.mesKey))].sort();
     const selMes = $('filterMes');
     selMes.innerHTML = '<option value="">Todos los meses</option>' + meses.map(m => `<option value="${m}">${mesLabels[m] || m}</option>`).join('');
-    selMes.onchange = () => { selectedEquipo = null; selectedTipo = null; selectedSemana = null; render(); };
+    
+    const clases = [...new Set(RAW.map(r => r.clase))].sort();
+    const selGrupo = $('filterGrupo');
+    selGrupo.innerHTML = '<option value="">Todos los grupos</option>' + clases.map(c => `<option value="${c}">${c}</option>`).join('');
+
+    selMes.replaceWith(selMes.cloneNode(true));
+    selGrupo.replaceWith(selGrupo.cloneNode(true));
+
+    $('filterMes').addEventListener('change', render);
+    $('filterGrupo').addEventListener('change', render);
   }
 
   function getFiltered(){
-    const g = $('filterGrupo').value;
     const m = $('filterMes').value;
+    const g = $('filterGrupo').value;
     return RAW.filter(r => {
-      const matchGrupo = !g || r.clase === g;
       const matchMes = !m || r.mesKey === m;
-      const matchEquipo = !selectedEquipo || r.equipo === selectedEquipo;
-      const matchTipo = !selectedTipo || r.desTipo === selectedTipo;
-      const matchSemana = !selectedSemana || r.semana === selectedSemana;
-      return matchGrupo && matchMes && matchEquipo && matchTipo && matchSemana;
+      const matchGrupo = !g || r.clase === g;
+      return matchMes && matchGrupo;
     });
   }
 
@@ -483,8 +512,8 @@
     const table = $(tableId);
     if (!wrap || !table) return;
 
-    let fontSize = startFont || 11, pad = startPad != null ? startPad : 4;
-    const minFont = minFontIn || 7.5, minPad = minPadIn != null ? minPadIn : 1;
+    let fontSize = startFont || 10, pad = startPad != null ? startPad : 3;
+    const minFont = minFontIn || 6.5, minPad = minPadIn != null ? minPadIn : 1;
 
     const apply = () => {
       table.style.fontSize = fontSize + 'px';
@@ -508,16 +537,10 @@
     const horasProd = sum(r => r.desTipo === 'Producción');
     const horasDisp = sum(r => r.desTipo === 'Disponible');
     const horasVarado = sum(r => r.desTipo === 'Varado');
-
-    // MEDIDAS SOLICITADAS:
-    // Horas Totales = SUM(Datos[Horas_Disponibles] + Datos[Horas_Producción])
+    
     const horasTotales = horasDisp + horasProd;
-
-    // % Disponibilidad = (Horas Totales - Horas Varado) / Horas Totales * 100
-    const pctDisponibilidad = horasTotales > 0 ? ((horasTotales - horasVarado) / horasTotales) * 100 : 0;
-
-    // % Utilizacion = Horas Producción / (Horas Disponibles + Horas Producción) * 100  [= Horas Producción / Horas Totales]
-    const pctUtilizacion = horasTotales > 0 ? (horasProd / horasTotales) * 100 : 0;
+    const pctDisp = horasTotales > 0 ? ((horasTotales - horasVarado) / horasTotales) * 100 : 0;
+    const pctUtilGlobal = horasTotales > 0 ? (horasProd / horasTotales) * 100 : 0;
 
     const equiposUnicos = new Set(data.map(r => r.equipo)).size;
     const equiposVaradosSet = new Set(data.filter(r => r.desTipo === 'Varado').map(r => r.equipo));
@@ -527,8 +550,8 @@
     const topVarado = Object.entries(varadoMap).sort((a,b) => b[1]-a[1])[0];
 
     $('kpiEquipos').textContent = equiposUnicos;
-    $('kpiDisp').textContent = pctDisponibilidad.toFixed(1) + '%';
-    const isOptimo = pctDisponibilidad >= 70;
+    $('kpiDisp').textContent = pctDisp.toFixed(1) + '%';
+    const isOptimo = pctDisp >= 70;
     $('kpiDispBadge').textContent = isOptimo ? 'ÓPTIMO' : 'CRÍTICO';
     $('kpiDispBadge').className = `badge border ${isOptimo ? 'bg-green/10 text-green border-green/30' : 'bg-red/10 text-red border-red/30'}`;
 
@@ -549,54 +572,19 @@
     const pctVaradosCount = equiposUnicos ? (equiposVaradosSet.size / equiposUnicos * 100) : 0;
     $('kpiEquiposVaradosSub').textContent = `${equiposVaradosSet.size} de ${equiposUnicos} (${pctVaradosCount.toFixed(1)}%)`;
 
-    $('kpiUtilGlobal').textContent = pctUtilizacion.toFixed(1) + '%';
-
-    const mesActivo = $('filterMes').value;
-    const alcanceGlobal = RAW.filter(r => !mesActivo || r.mesKey === mesActivo);
-    const horasVaradoGlobal = alcanceGlobal.filter(r => r.desTipo === 'Varado').reduce((a, r) => a + r.horas, 0);
+    $('kpiUtilGlobal').textContent = pctUtilGlobal.toFixed(1) + '%';
 
     renderDonut(horasProd, horasDisp, horasVarado, horasTotales);
     renderTblClase(data);
-    renderChartEquipo(data, horasVaradoGlobal);
-    renderChartSemana(data);
+    renderChartClase(data);
     renderTblVarados(data, horasVarado);
-
-    const badge = $('equipoFilterBadge');
-    if (selectedEquipo) {
-      $('equipoFilterName').textContent = selectedEquipo;
-      badge.classList.remove('hidden');
-      badge.classList.add('flex');
-    } else {
-      badge.classList.add('hidden');
-      badge.classList.remove('flex');
-    }
-
-    const tipoBadge = $('tipoFilterBadge');
-    if (selectedTipo) {
-      $('tipoFilterName').textContent = selectedTipo;
-      tipoBadge.classList.remove('hidden');
-      tipoBadge.classList.add('flex');
-    } else {
-      tipoBadge.classList.add('hidden');
-      tipoBadge.classList.remove('flex');
-    }
-
-    const semanaBadge = $('semanaFilterBadge');
-    if (selectedSemana) {
-      $('semanaFilterName').textContent = selectedSemana;
-      semanaBadge.classList.remove('hidden');
-      semanaBadge.classList.add('flex');
-    } else {
-      semanaBadge.classList.add('hidden');
-      semanaBadge.classList.remove('flex');
-    }
 
     requestAnimationFrame(() => {
       fitTable('wrapVarados', 'tblVaradosTable', 10, 6.5, 3, 1);
     });
   }
 
-  function renderDonut(prod, disp, varado, total){
+  function renderDonut(prod, disp, varado, totalHorasDispProd){
     if (chartDonut) chartDonut.destroy();
     const ctx = $('chartDonut').getContext('2d');
 
@@ -608,37 +596,26 @@
           data: [prod, disp, varado],
           backgroundColor: [COLORS.prod, COLORS.disp, COLORS.varado],
           borderWidth: 2,
-          borderColor: '#FFFFFF',
-          offset: ['Producción', 'Disponible', 'Varado'].map(l => l === selectedTipo ? 14 : 0)
+          borderColor: '#FFFFFF'
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         cutout: '65%',
-        onClick: (evt, elements, chart) => {
-          if (!elements.length) return;
-          const clickedTipo = chart.data.labels[elements[0].index];
-          selectedTipo = (selectedTipo === clickedTipo) ? null : clickedTipo;
-          render();
-        },
-        onHover: (evt, elements, chart) => {
-          chart.canvas.style.cursor = elements.length ? 'pointer' : 'default';
-        },
         plugins: {
           legend: {
             position: 'right',
             labels: {
               boxWidth: 12,
               padding: 14,
-              font: { size: 13, weight: '600' },
+              font: { size: 12, weight: '600' },
               color: '#0F172A',
               generateLabels: (chart) => {
                 const ds = chart.data.datasets[0];
-                const totalVal = ds.data.reduce((a, b) => a + b, 0);
                 return chart.data.labels.map((label, i) => {
                   const value = ds.data[i];
-                  const pct = totalVal > 0 ? ((value / totalVal) * 100).toFixed(1) : '0.0';
+                  const pct = totalHorasDispProd > 0 ? ((value / totalHorasDispProd) * 100).toFixed(1) : '0.0';
                   return {
                     text: `${label}: ${Math.round(value)}h (${pct}%)`,
                     fillStyle: ds.backgroundColor[i],
@@ -651,13 +628,12 @@
           },
           datalabels: {
             color: '#0F172A',
-            font: { size: 12, weight: 'bold' },
+            font: { size: 11, weight: 'bold' },
             clamp: true,
             formatter: (value) => {
-              if (!value || total === 0) return '';
-              const pct = ((value / total) * 100).toFixed(1);
-              return `${Math.round(value)}h
-(${pct}%)`;
+              if (!value || totalHorasDispProd === 0) return '';
+              const pct = ((value / totalHorasDispProd) * 100).toFixed(1);
+              return `${Math.round(value)}h\n(${pct}%)`;
             }
           }
         }
@@ -677,17 +653,6 @@
     return map;
   }
 
-  function equipoMap(data){
-    const map = {};
-    data.forEach(r => {
-      if (!map[r.equipo]) map[r.equipo] = { clase: r.clase, prod: 0, disp: 0, varado: 0 };
-      if (r.desTipo === 'Producción') map[r.equipo].prod += r.horas;
-      else if (r.desTipo === 'Disponible') map[r.equipo].disp += r.horas;
-      else if (r.desTipo === 'Varado') map[r.equipo].varado += r.horas;
-    });
-    return map;
-  }
-
   function renderTblClase(data){
     const map = claseMap(data);
     const tbody = $('tblClase');
@@ -702,91 +667,38 @@
     $('tblClaseTotal').textContent = totalEquipos;
   }
 
-  function renderChartEquipo(data, horasVaradoGlobal){
-    const map = equipoMap(data);
+  function renderChartClase(data){
+    const map = claseMap(data);
     const entries = Object.entries(map);
-    const labels = entries.map(([eq]) => eq);
+    const labels = entries.map(([clase]) => clase);
     const varado = entries.map(([,b]) => Math.round(b.varado));
+    
     const pctDisp = entries.map(([,b]) => {
-      const hTotales = b.disp + b.prod;
-      return hTotales > 0 ? +(((hTotales - b.varado) / hTotales) * 100).toFixed(1) : 0;
+      const totClass = b.prod + b.disp;
+      return totClass > 0 ? +(((totClass - b.varado) / totClass) * 100).toFixed(1) : 0;
     });
+
     const pctUtil = entries.map(([,b]) => {
-      const hTotales = b.disp + b.prod;
-      return hTotales > 0 ? +((b.prod / hTotales) * 100).toFixed(1) : 0;
+      const totClass = b.prod + b.disp;
+      return totClass > 0 ? +((b.prod / totClass) * 100).toFixed(1) : 0;
     });
 
-    if (chartEquipo) chartEquipo.destroy();
-    const ctx = $('chartEquipo').getContext('2d');
+    if (chartClase) chartClase.destroy();
+    const ctx = $('chartClase').getContext('2d');
 
-    chartEquipo = new Chart(ctx, {
+    chartClase = new Chart(ctx, {
       data: {
         labels,
         datasets: [
-          {
-            type: 'bar', label: 'Hrs Varado', data: varado, backgroundColor: (ctx) => {
-              const lbl = labels[ctx.dataIndex];
-              return (selectedEquipo && lbl === selectedEquipo) ? '#9A3412' : COLORS.varado;
-            },
-            yAxisID: 'yHoras', order: 3,
-            datalabels: {
-              display: true,
-              anchor: 'end',
-              align: 'top',
-              offset: 2,
-              clamp: true,
-              color: '#EA580C',
-              font: { size: 8.5, weight: 'bold' },
-              lineHeight: 1.1,
-              formatter: (value) => {
-                if (!value) return '';
-                const pctGlobal = horasVaradoGlobal > 0 ? ((value / horasVaradoGlobal) * 100).toFixed(1) : '0.0';
-                return [`${Math.round(value)}h`, `(${pctGlobal}% flota)`];
-              }
-            }
-          },
-          { type: 'line', label: '% Disp', data: pctDisp, borderColor: COLORS.disp, backgroundColor: COLORS.disp, yAxisID: 'yPct', tension: 0.3, pointRadius: 2.5, borderWidth: 2, order: 1,
-            datalabels: {
-              display: true,
-              align: 'bottom',
-              anchor: 'end',
-              offset: 4,
-              clamp: true,
-              color: COLORS.disp,
-              font: { size: 8, weight: '700' },
-              formatter: (value) => value > 0 ? value.toFixed(0) + '%' : ''
-            }
-          },
-          { type: 'line', label: '% Utilización', data: pctUtil, borderColor: COLORS.purple ?? '#7C3AED', backgroundColor: '#7C3AED', yAxisID: 'yPct', tension: 0.3, pointRadius: 2.5, borderWidth: 2, borderDash: [4,3], order: 2,
-            datalabels: {
-              display: true,
-              align: 'top',
-              anchor: 'end',
-              offset: 4,
-              clamp: true,
-              color: '#7C3AED',
-              font: { size: 8, weight: '700' },
-              formatter: (value) => value > 0 ? value.toFixed(0) + '%' : ''
-            }
-          }
+          { type: 'bar', label: 'Hrs Varado', data: varado, backgroundColor: COLORS.varado, yAxisID: 'yHoras', order: 3 },
+          { type: 'line', label: '% Disp', data: pctDisp, borderColor: COLORS.disp, backgroundColor: COLORS.disp, yAxisID: 'yPct', tension: 0.3, pointRadius: 3, borderWidth: 2, order: 1 },
+          { type: 'line', label: '% Utilización', data: pctUtil, borderColor: COLORS.purple ?? '#7C3AED', backgroundColor: '#7C3AED', yAxisID: 'yPct', tension: 0.3, pointRadius: 3, borderWidth: 2, borderDash: [4,3], order: 2 }
         ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        layout: { padding: { top: 22, bottom: 4, left: 4, right: 4 } },
         interaction: { mode: 'index', intersect: false },
-        onClick: (evt, elements, chart) => {
-          const barHit = elements.find(el => el.datasetIndex === 0);
-          if (!barHit) return;
-          const clickedEquipo = chart.data.labels[barHit.index];
-          selectedEquipo = (selectedEquipo === clickedEquipo) ? null : clickedEquipo;
-          render();
-        },
-        onHover: (evt, elements, chart) => {
-          const barHit = elements.find(el => el.datasetIndex === 0);
-          chart.canvas.style.cursor = barHit ? 'pointer' : 'default';
-        },
         plugins: {
           legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 10 }, color: '#475569' } },
           datalabels: { display: false }
@@ -795,136 +707,6 @@
           x: { ticks: { font: { size: 9 }, color: '#64748B', maxRotation: 45, minRotation: 0 }, grid: { display: false } },
           yHoras: { position: 'left', ticks: { font: { size: 9 }, color: '#64748B' }, title: { display: true, text: 'Hrs Varado', font: { size: 9 } }, grid: { color: '#E2E8F0' } },
           yPct: { position: 'right', min: 0, max: 100, ticks: { font: { size: 9 }, color: '#64748B' }, title: { display: true, text: '%', font: { size: 9 } }, grid: { display: false } }
-        }
-      }
-    });
-  }
-
-  function semanaMap(data){
-    const map = {};
-    data.forEach(r => {
-      if (!map[r.semana]) map[r.semana] = { order: r.semanaOrder, prod: 0, disp: 0, varado: 0 };
-      if (r.desTipo === 'Producción') map[r.semana].prod += r.horas;
-      else if (r.desTipo === 'Disponible') map[r.semana].disp += r.horas;
-      else if (r.desTipo === 'Varado') map[r.semana].varado += r.horas;
-    });
-    return map;
-  }
-
-  function renderChartSemana(data){
-    const map = semanaMap(data);
-    const entries = Object.entries(map).sort((a, b) => a[1].order - b[1].order);
-    const labels = entries.map(([k]) => k);
-
-    // % Utilización y % Disponibilidad por semana usando exactamente las fórmulas dadas
-    const pctProdSemana = entries.map(([, v]) => {
-      const hTotales = v.disp + v.prod;
-      return hTotales > 0 ? +((v.prod / hTotales) * 100).toFixed(1) : 0;
-    });
-    const pctDispSemana = entries.map(([, v]) => {
-      const hTotales = v.disp + v.prod;
-      return hTotales > 0 ? +(((hTotales - v.varado) / hTotales) * 100).toFixed(1) : 0;
-    });
-
-    if (chartSemana) chartSemana.destroy();
-    const ctx = $('chartSemana').getContext('2d');
-
-    const pillLabel = (color, align, distancia) => ({
-      display: true,
-      align,
-      anchor: align,
-      offset: distancia,
-      clamp: true,
-      backgroundColor: color + '22',
-      borderRadius: 8,
-      padding: { top: 3, bottom: 3, left: 6, right: 6 },
-      color: color,
-      font: { size: 10, weight: '700' },
-      formatter: (value) => value > 0 ? Math.round(value) + '%' : ''
-    });
-
-    chartSemana = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [
-          {
-            label: '%Utilizacion',
-            data: pctProdSemana,
-            borderColor: COLORS.prod,
-            backgroundColor: COLORS.prod,
-            tension: 0.45,
-            borderWidth: 3,
-            pointRadius: 3,
-            pointBackgroundColor: COLORS.prod,
-            pointHoverRadius: 5,
-            fill: false,
-            datalabels: pillLabel(COLORS.prod, 'bottom', 10)
-          },
-          {
-            label: '% Disponibilidad',
-            data: pctDispSemana,
-            borderColor: COLORS.disp,
-            backgroundColor: COLORS.disp,
-            tension: 0.45,
-            borderWidth: 3,
-            pointRadius: 3,
-            pointBackgroundColor: COLORS.disp,
-            pointHoverRadius: 5,
-            fill: false,
-            datalabels: pillLabel(COLORS.disp, 'top', 10)
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        layout: { padding: { top: 26, bottom: 4, left: 8, right: 8 } },
-        interaction: { mode: 'index', intersect: false },
-        onClick: (evt, elements, chart) => {
-          if (!elements.length) return;
-          const idx = elements[0].index;
-          const clickedSemana = chart.data.labels[idx];
-          selectedSemana = (selectedSemana === clickedSemana) ? null : clickedSemana;
-          render();
-        },
-        onHover: (evt, elements, chart) => {
-          chart.canvas.style.cursor = elements.length ? 'pointer' : 'default';
-        },
-        plugins: {
-          legend: {
-            position: 'bottom',
-            align: 'center',
-            labels: {
-              usePointStyle: true,
-              pointStyle: 'circle',
-              boxWidth: 7,
-              padding: 14,
-              font: { size: 10 },
-              color: '#475569'
-            }
-          },
-          datalabels: { display: false }
-        },
-        scales: {
-          x: {
-            ticks: {
-              font: { size: 9 }, color: '#94A3B8',
-              callback: function(value, index){
-                const lbl = this.getLabelForValue(value);
-                return lbl === selectedSemana ? '● ' + lbl : lbl;
-              }
-            },
-            grid: { display: false },
-            title: { display: true, text: 'Semana', font: { size: 9 }, color: '#94A3B8' }
-          },
-          y: {
-            min: -18, max: 118,
-            afterBuildTicks: (axis) => { axis.ticks = [0, 50, 100].map(v => ({ value: v })); },
-            ticks: { callback: (v) => v + '%', font: { size: 9 }, color: '#94A3B8' },
-            grid: { color: '#E2E8F0', borderDash: [3, 3] },
-            title: { display: true, text: '%Utilización y % Disponibilidad', font: { size: 9 }, color: '#94A3B8' }
-          }
         }
       }
     });
