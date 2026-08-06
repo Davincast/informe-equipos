@@ -275,8 +275,8 @@
   }
 
   // DESCARGA AUTOMÁTICA AL ABRIR LA PÁGINA
-  window.addEventListener('DOMContentLoaded', () => {
-    fetch(("Libro1.xlsx")
+ window.addEventListener('DOMContentLoaded', () => {
+    fetch(RUTA_EXCEL_GITHUB)
       .then(res => {
         if (!res.ok) throw new Error(`No se encontró el archivo ${RUTA_EXCEL_GITHUB} en el servidor.`);
         return res.arrayBuffer();
@@ -896,9 +896,6 @@
   }
 
 })();
-</script>
-</body>
-</html>
 </script>
 </body>
 </html>
