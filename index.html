@@ -41,17 +41,23 @@
 </head>
 <body class="bg-bg text-ink h-screen overflow-hidden flex flex-col">
 
-<!-- PANTALLA DE CARGA AUTOMÁTICA -->
+<!-- LOADER SCREEN -->
 <div id="loaderScreen" class="h-full flex flex-col items-center justify-center px-4">
   <div class="max-w-md w-full text-center">
-    <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-cyan border-t-transparent mb-4"></div>
-    <h1 class="text-xl font-bold text-ink mb-1">Cargando Informe Ejecutivo...</h1>
-    <p class="text-sub text-xs">Obteniendo datos actualizados desde el repositorio.</p>
-    <div id="loadError" class="hidden mt-4 text-xs text-red bg-red/10 border border-red/30 rounded p-3 text-left"></div>
+    <h1 class="text-2xl font-bold text-ink mb-2">Informe Ejecutivo de Equipos</h1>
+    <p class="text-sub text-xs mb-6">Carga el archivo <strong>Analisis pwq.xlsx</strong> (Pestaña <strong>Digitacion</strong>, Tabla <strong>Digitacion_2</strong>) para generar el panel.</p>
+
+    <label id="dropZone" for="fileInput" class="block border-2 border-dashed border-border rounded-xl bg-panel hover:border-cyan/60 transition-all p-8 cursor-pointer">
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" class="hidden" />
+      <div class="text-sm text-ink font-semibold">Selecciona o arrastra "Analisis pwq.xlsx"</div>
+      <div class="text-xs text-sub mt-1">.xlsx, .xls, .csv</div>
+    </label>
+
+    <div id="loadError" class="hidden mt-3 text-xs text-red bg-red/10 border border-red/30 rounded p-2"></div>
   </div>
 </div>
 
-<!-- DASHBOARD (SE MUESTRA TRAS LA CARGA EXITOSA) -->
+<!-- DASHBOARD (1 SINGLE PAGE, NO SCROLL EXTERNO) -->
 <div id="dashboard" class="hidden h-full w-full flex flex-col p-2 gap-2 overflow-hidden">
 
   <!-- Header / Filtros -->
@@ -75,22 +81,20 @@
         <select id="filterMes" class="text-xs bg-panel border border-border rounded px-2 py-1 text-ink focus:outline-none focus:border-cyan/60"></select>
       </div>
 
-      <!-- Botón para cargar archivo local opcional -->
-      <label for="fileInput" class="text-xs px-2 py-1 rounded border border-border bg-panel hover:border-cyan/60 text-sub transition-colors cursor-pointer">
-        Cargar otro Excel
-        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" class="hidden" />
-      </label>
+      <button id="resetBtn" class="text-xs px-2 py-1 rounded border border-border bg-panel hover:border-cyan/60 text-sub transition-colors">Cambiar archivo</button>
     </div>
   </header>
 
-  <!-- Fila 1 (KPIs) -->
+  <!-- Fila 1 (Fija): 9 KPIs REDISEÑADOS -->
   <section class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-1.5 flex-shrink-0">
+    <!-- Equipos Únicos -->
     <div class="bg-panel border border-border rounded-lg p-1.5 shadow-sm flex flex-col justify-between">
       <p class="text-[10px] text-sub uppercase mono font-semibold leading-tight">Equipos Únicos</p>
       <p id="kpiEquipos" class="text-2xl font-black text-ink mono leading-tight my-0.5">0</p>
       <p class="text-[9px] text-sub truncate">Activos en período</p>
     </div>
 
+    <!-- % Disponibilidad -->
     <div class="bg-panel border border-border rounded-lg p-1.5 shadow-sm flex flex-col justify-between">
       <div class="flex items-center justify-between gap-1">
         <p class="text-[10px] text-sub uppercase mono font-semibold leading-tight truncate">% Disponibilidad</p>
@@ -100,42 +104,49 @@
       <p class="text-[9px] text-sub truncate">(H.Totales - H.Varado)/H.Totales</p>
     </div>
 
+    <!-- Horas Totales -->
     <div class="bg-panel border border-border rounded-lg p-1.5 shadow-sm flex flex-col justify-between">
       <p class="text-[10px] text-sub uppercase mono font-semibold leading-tight">Horas Totales</p>
       <p id="kpiTotalHoras" class="text-xl font-black text-ink mono leading-tight my-0.5">0</p>
       <p class="text-[9px] text-sub truncate">H.Disp + H.Prod</p>
     </div>
 
+    <!-- Mayor Varado -->
     <div class="bg-panel border border-border rounded-lg p-1.5 shadow-sm flex flex-col justify-between">
       <p class="text-[10px] text-sub uppercase mono font-semibold leading-tight">Mayor Varado</p>
       <p id="kpiClaseVarado" class="text-sm font-bold text-ink leading-tight my-0.5 truncate" title="—">—</p>
       <p id="kpiClaseVaradoHrs" class="text-[9px] text-orange mono font-semibold truncate">0 h varadas</p>
     </div>
 
+    <!-- Hrs Producción -->
     <div class="bg-panel border border-border rounded-lg p-1.5 shadow-sm flex flex-col justify-between">
       <p class="text-[10px] text-sub uppercase mono font-semibold leading-tight">Hrs Producción</p>
       <p id="kpiHorasProd" class="text-xl font-black text-cyan mono leading-tight my-0.5">0</p>
       <p class="text-[9px] text-sub mono truncate"><span id="kpiPctProd">0%</span> del total</p>
     </div>
 
+    <!-- Hrs Disponibles -->
     <div class="bg-panel border border-border rounded-lg p-1.5 shadow-sm flex flex-col justify-between">
       <p class="text-[10px] text-sub uppercase mono font-semibold leading-tight">Hrs Disponibles</p>
       <p id="kpiHorasDisp" class="text-xl font-black text-green mono leading-tight my-0.5">0</p>
       <p class="text-[9px] text-sub mono truncate"><span id="kpiPctDisp">0%</span> del total</p>
     </div>
 
+    <!-- Hrs Varadas -->
     <div class="bg-panel border border-border rounded-lg p-1.5 shadow-sm flex flex-col justify-between">
       <p class="text-[10px] text-sub uppercase mono font-semibold leading-tight">Hrs Varadas</p>
       <p id="kpiHorasVarado" class="text-xl font-black text-orange mono leading-tight my-0.5">0</p>
       <p class="text-[9px] text-sub mono truncate"><span id="kpiPctVarado">0%</span> del total</p>
     </div>
 
+    <!-- Equipos Varados -->
     <div class="bg-panel border border-border rounded-lg p-1.5 shadow-sm flex flex-col justify-between">
       <p class="text-[10px] text-sub uppercase mono font-semibold leading-tight">Equipos Varados</p>
       <p id="kpiEquiposVarados" class="text-xl font-black text-red mono leading-tight my-0.5">0</p>
       <p id="kpiEquiposVaradosSub" class="text-[9px] text-sub truncate">0% del total activos</p>
     </div>
 
+    <!-- % Utilización -->
     <div class="bg-panel border border-border rounded-lg p-1.5 shadow-sm flex flex-col justify-between">
       <p class="text-[10px] text-sub uppercase mono font-semibold leading-tight">% Utilización</p>
       <p id="kpiUtilGlobal" class="text-xl font-black text-purple mono leading-tight my-0.5">0%</p>
@@ -143,7 +154,7 @@
     </div>
   </section>
 
-  <!-- Fila 2 -->
+  <!-- Fila 2 (Flexible): Donut + Tabla Cantidad Equipos + Diagnóstico de Varados -->
   <section class="grid grid-cols-1 md:grid-cols-10 gap-2 flex-1 min-h-0">
     <div class="md:col-span-4 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
       <div class="flex items-center justify-between mb-1 flex-shrink-0">
@@ -205,7 +216,7 @@
     </div>
   </section>
 
-  <!-- Fila 3 -->
+  <!-- Fila 3 (Flexible): Resumen por Equipo + Horas por Semana -->
   <section class="grid grid-cols-1 lg:grid-cols-12 gap-2 flex-1 min-h-0">
     <div class="lg:col-span-8 bg-panel border border-border rounded-lg p-2 flex flex-col min-h-0 shadow-sm">
       <div class="flex items-center justify-between mb-1 flex-shrink-0">
@@ -238,9 +249,6 @@
 
 <script>
 (function(){
-  // NOMBRE DEL ARCHIVO EN TU REPOSITORIO DE GITHUB
-  const RUTA_EXCEL_GITHUB = './Libro1.xlsx';
-
   const CENTRO_FIJO = "EPC - VIA LACTEA";
   const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   const COLORS = { prod:'#0891B2', disp:'#059669', varado:'#EA580C' };
@@ -262,7 +270,7 @@
 
   function normalizeStr(v){
     return String(v ?? '')
-      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .toLowerCase()
       .replace(/\s+/g, ' ')
       .trim();
@@ -270,52 +278,90 @@
 
   function showLoadError(msg){
     const el = $('loadError');
-    el.innerHTML = msg;
+    el.textContent = msg;
     el.classList.remove('hidden');
   }
 
-  // DESCARGA AUTOMÁTICA AL ABRIR LA PÁGINA
- window.addEventListener('DOMContentLoaded', () => {
-    fetch(RUTA_EXCEL_GITHUB)
-      .then(res => {
-        if (!res.ok) throw new Error(`No se encontró el archivo ${RUTA_EXCEL_GITHUB} en el servidor.`);
-        return res.arrayBuffer();
-      })
-      .then(buffer => {
-        const wb = XLSX.read(new Uint8Array(buffer), { type: 'array', cellDates: true });
-        const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '', raw: true });
-        processData(json);
-      })
-      .catch(err => {
-        showLoadError(`<strong>Error al cargar datos automáticos:</strong><br>${err.message}<br><br>Asegúrate de haber subido el archivo <code>datos.xlsx</code> en la misma carpeta del HTML en tu GitHub.`);
-      });
-  });
+  function clearLoadError(){
+    $('loadError').textContent = '';
+    $('loadError').classList.add('hidden');
+  }
 
-  // Listener para cargar archivos manualmente desde el botón
-  $('fileInput').addEventListener('change', e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      try {
-        const wb = XLSX.read(new Uint8Array(evt.target.result), { type: 'array', cellDates: true });
-        const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '', raw: true });
-        processData(json);
-      } catch (err) {
-        alert('Error procesando el archivo subido.');
-      }
-    };
-    reader.readAsArrayBuffer(file);
+  const dropZone = $('dropZone');
+  const fileInput = $('fileInput');
+
+  ['dragenter','dragover'].forEach(evt => dropZone.addEventListener(evt, e => e.preventDefault()));
+  dropZone.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); });
+  fileInput.addEventListener('change', e => { const f = e.target.files[0]; if (f) handleFile(f); });
+
+  $('resetBtn').addEventListener('click', () => {
+    $('dashboard').classList.add('hidden');
+    $('loaderScreen').classList.remove('hidden');
+    clearLoadError();
+    fileInput.value = '';
+    selectedEquipo = null;
+    selectedTipo = null;
+    selectedSemana = null;
+    selectedClaseTabla = null;
   });
 
   window.addEventListener('resize', () => {
     if (!$('dashboard').classList.contains('hidden')) render();
   });
 
-  $('clearEquipoFilter').addEventListener('click', () => { selectedEquipo = null; render(); });
-  $('clearTipoFilter').addEventListener('click', () => { selectedTipo = null; render(); });
-  $('clearSemanaFilter').addEventListener('click', () => { selectedSemana = null; render(); });
-  $('clearClaseFilter').addEventListener('click', () => { selectedClaseTabla = null; render(); });
+  $('clearEquipoFilter').addEventListener('click', () => {
+    selectedEquipo = null;
+    render();
+  });
+
+  $('clearTipoFilter').addEventListener('click', () => {
+    selectedTipo = null;
+    render();
+  });
+
+  $('clearSemanaFilter').addEventListener('click', () => {
+    selectedSemana = null;
+    render();
+  });
+
+  $('clearClaseFilter').addEventListener('click', () => {
+    selectedClaseTabla = null;
+    render();
+  });
+
+  function handleFile(file){
+    clearLoadError();
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
+        
+        // 1. Identificar hoja "Digitacion"
+        const targetSheetName = wb.SheetNames.find(s => normalizeStr(s) === normalizeStr('Digitacion')) || wb.SheetNames[0];
+        const sheet = wb.Sheets[targetSheetName];
+
+        if (!sheet) {
+          showLoadError('No se encontró la pestaña "Digitacion" en el archivo Excel.');
+          return;
+        }
+
+        // 2. Extraer rango de la tabla "Digitacion_2" si existen metadatos de tabla
+        let options = { defval: '', raw: true };
+        if (sheet['!tables'] && Array.isArray(sheet['!tables'])) {
+          const targetTable = sheet['!tables'].find(t => normalizeStr(t.name || t.Name) === normalizeStr('Digitacion_2'));
+          if (targetTable && targetTable.ref) {
+            options.range = targetTable.ref;
+          }
+        }
+
+        const json = XLSX.utils.sheet_to_json(sheet, options);
+        processData(json);
+      } catch (err) {
+        showLoadError('Error procesando el archivo. Verifica que sea un archivo de Excel válido.');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
 
   function parseHoras(v){
     if (typeof v === 'number') return v;
@@ -347,7 +393,7 @@
 
   function processData(json){
     if (!json.length) {
-      showLoadError('El archivo Excel de datos está vacío.');
+      showLoadError('La pestaña "Digitacion" o la tabla "Digitacion_2" no contiene datos.');
       return;
     }
 
@@ -421,7 +467,7 @@
     });
 
     if (!rows.length) {
-      showLoadError(`No se encontraron registros de datos válidos.`);
+      showLoadError(`No se encontraron registros en la tabla "Digitacion_2". Revisa la información de tu archivo.`);
       return;
     }
 
@@ -442,7 +488,10 @@
       else if (tipoNorm.includes('varad')) tipoFinal = 'Varado';
       else if (tipoNorm.includes('disp')) tipoFinal = 'Disponible';
 
-      resultado.push({ ...r, desTipo: tipoFinal });
+      resultado.push({
+        ...r,
+        desTipo: tipoFinal
+      });
     });
     return resultado;
   }
@@ -555,30 +604,39 @@
     const badge = $('equipoFilterBadge');
     if (selectedEquipo) {
       $('equipoFilterName').textContent = selectedEquipo;
-      badge.classList.remove('hidden'); badge.classList.add('flex');
+      badge.classList.remove('hidden');
+      badge.classList.add('flex');
     } else {
-      badge.classList.add('hidden'); badge.classList.remove('flex');
+      badge.classList.add('hidden');
+      badge.classList.remove('flex');
     }
 
     const tipoBadge = $('tipoFilterBadge');
     if (selectedTipo) {
       $('tipoFilterName').textContent = selectedTipo;
-      tipoBadge.classList.remove('hidden'); tipoBadge.classList.add('flex');
+      tipoBadge.classList.remove('hidden');
+      tipoBadge.classList.add('flex');
     } else {
-      tipoBadge.classList.add('hidden'); tipoBadge.classList.remove('flex');
+      tipoBadge.classList.add('hidden');
+      tipoBadge.classList.remove('flex');
     }
 
     const semanaBadge = $('semanaFilterBadge');
     if (selectedSemana) {
       $('semanaFilterName').textContent = selectedSemana;
-      semanaBadge.classList.remove('hidden'); semanaBadge.classList.add('flex');
+      semanaBadge.classList.remove('hidden');
+      semanaBadge.classList.add('flex');
     } else {
-      semanaBadge.classList.add('hidden'); semanaBadge.classList.remove('flex');
+      semanaBadge.classList.add('hidden');
+      semanaBadge.classList.remove('flex');
     }
 
     const btnClase = $('clearClaseFilter');
-    if (selectedClaseTabla) btnClase.classList.remove('hidden');
-    else btnClase.classList.add('hidden');
+    if (selectedClaseTabla) {
+      btnClase.classList.remove('hidden');
+    } else {
+      btnClase.classList.add('hidden');
+    }
 
     requestAnimationFrame(() => {
       fitTable('wrapVarados', 'tblVaradosTable', 10, 6.5, 3, 1);
@@ -618,20 +676,30 @@
           legend: {
             position: 'right',
             labels: {
-              boxWidth: 12, padding: 14, font: { size: 13, weight: '600' }, color: '#0F172A',
+              boxWidth: 12,
+              padding: 14,
+              font: { size: 13, weight: '600' },
+              color: '#0F172A',
               generateLabels: (chart) => {
                 const ds = chart.data.datasets[0];
                 const totalVal = ds.data.reduce((a, b) => a + b, 0);
                 return chart.data.labels.map((label, i) => {
                   const value = ds.data[i];
                   const pct = totalVal > 0 ? ((value / totalVal) * 100).toFixed(1) : '0.0';
-                  return { text: `${label}: ${Math.round(value)}h (${pct}%)`, fillStyle: ds.backgroundColor[i], strokeStyle: ds.backgroundColor[i], index: i };
+                  return {
+                    text: `${label}: ${Math.round(value)}h (${pct}%)`,
+                    fillStyle: ds.backgroundColor[i],
+                    strokeStyle: ds.backgroundColor[i],
+                    index: i
+                  };
                 });
               }
             }
           },
           datalabels: {
-            color: '#0F172A', font: { size: 12, weight: 'bold' }, clamp: true,
+            color: '#0F172A',
+            font: { size: 12, weight: 'bold' },
+            clamp: true,
             formatter: (value) => {
               if (!value || total === 0) return '';
               const pct = ((value / total) * 100).toFixed(1);
@@ -718,8 +786,14 @@
             },
             yAxisID: 'yHoras', order: 3,
             datalabels: {
-              display: true, anchor: 'end', align: 'top', offset: 2, clamp: true, color: '#EA580C',
-              font: { size: 8.5, weight: 'bold' }, lineHeight: 1.1,
+              display: true,
+              anchor: 'end',
+              align: 'top',
+              offset: 2,
+              clamp: true,
+              color: '#EA580C',
+              font: { size: 8.5, weight: 'bold' },
+              lineHeight: 1.1,
               formatter: (value) => {
                 if (!value) return '';
                 const pctGlobal = horasVaradoGlobal > 0 ? ((value / horasVaradoGlobal) * 100).toFixed(1) : '0.0';
@@ -729,14 +803,24 @@
           },
           { type: 'line', label: '% Disp', data: pctDisp, borderColor: COLORS.disp, backgroundColor: COLORS.disp, yAxisID: 'yPct', tension: 0.3, pointRadius: 2.5, borderWidth: 2, order: 1,
             datalabels: {
-              display: true, align: 'bottom', anchor: 'end', offset: 4, clamp: true, color: COLORS.disp,
+              display: true,
+              align: 'bottom',
+              anchor: 'end',
+              offset: 4,
+              clamp: true,
+              color: COLORS.disp,
               font: { size: 8, weight: '700' },
               formatter: (value) => value > 0 ? value.toFixed(0) + '%' : ''
             }
           },
           { type: 'line', label: '% Utilización', data: pctUtil, borderColor: COLORS.purple ?? '#7C3AED', backgroundColor: '#7C3AED', yAxisID: 'yPct', tension: 0.3, pointRadius: 2.5, borderWidth: 2, borderDash: [4,3], order: 2,
             datalabels: {
-              display: true, align: 'top', anchor: 'end', offset: 4, clamp: true, color: '#7C3AED',
+              display: true,
+              align: 'top',
+              anchor: 'end',
+              offset: 4,
+              clamp: true,
+              color: '#7C3AED',
               font: { size: 8, weight: '700' },
               formatter: (value) => value > 0 ? value.toFixed(0) + '%' : ''
             }
@@ -744,7 +828,8 @@
         ]
       },
       options: {
-        responsive: true, maintainAspectRatio: false,
+        responsive: true,
+        maintainAspectRatio: false,
         layout: { padding: { top: 22, bottom: 4, left: 4, right: 4 } },
         interaction: { mode: 'index', intersect: false },
         onClick: (evt, elements, chart) => {
@@ -799,9 +884,16 @@
     const ctx = $('chartSemana').getContext('2d');
 
     const pillLabel = (color, align, distancia) => ({
-      display: true, align, anchor: align, offset: distancia, clamp: true,
-      backgroundColor: color + '22', borderRadius: 8, padding: { top: 3, bottom: 3, left: 6, right: 6 },
-      color: color, font: { size: 10, weight: '700' },
+      display: true,
+      align,
+      anchor: align,
+      offset: distancia,
+      clamp: true,
+      backgroundColor: color + '22',
+      borderRadius: 8,
+      padding: { top: 3, bottom: 3, left: 6, right: 6 },
+      color: color,
+      font: { size: 10, weight: '700' },
       formatter: (value) => value > 0 ? Math.round(value) + '%' : ''
     });
 
@@ -811,19 +903,36 @@
         labels,
         datasets: [
           {
-            label: '%Utilizacion', data: pctProdSemana, borderColor: COLORS.prod, backgroundColor: COLORS.prod,
-            tension: 0.45, borderWidth: 3, pointRadius: 3, pointBackgroundColor: COLORS.prod, pointHoverRadius: 5, fill: false,
+            label: '%Utilizacion',
+            data: pctProdSemana,
+            borderColor: COLORS.prod,
+            backgroundColor: COLORS.prod,
+            tension: 0.45,
+            borderWidth: 3,
+            pointRadius: 3,
+            pointBackgroundColor: COLORS.prod,
+            pointHoverRadius: 5,
+            fill: false,
             datalabels: pillLabel(COLORS.prod, 'bottom', 10)
           },
           {
-            label: '% Disponibilidad', data: pctDispSemana, borderColor: COLORS.disp, backgroundColor: COLORS.disp,
-            tension: 0.45, borderWidth: 3, pointRadius: 3, pointBackgroundColor: COLORS.disp, pointHoverRadius: 5, fill: false,
+            label: '% Disponibilidad',
+            data: pctDispSemana,
+            borderColor: COLORS.disp,
+            backgroundColor: COLORS.disp,
+            tension: 0.45,
+            borderWidth: 3,
+            pointRadius: 3,
+            pointBackgroundColor: COLORS.disp,
+            pointHoverRadius: 5,
+            fill: false,
             datalabels: pillLabel(COLORS.disp, 'top', 10)
           }
         ]
       },
       options: {
-        responsive: true, maintainAspectRatio: false,
+        responsive: true,
+        maintainAspectRatio: false,
         layout: { padding: { top: 26, bottom: 4, left: 8, right: 8 } },
         interaction: { mode: 'index', intersect: false },
         onClick: (evt, elements, chart) => {
@@ -837,7 +946,18 @@
           chart.canvas.style.cursor = elements.length ? 'pointer' : 'default';
         },
         plugins: {
-          legend: { position: 'bottom', align: 'center', labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 7, padding: 14, font: { size: 10 }, color: '#475569' } },
+          legend: {
+            position: 'bottom',
+            align: 'center',
+            labels: {
+              usePointStyle: true,
+              pointStyle: 'circle',
+              boxWidth: 7,
+              padding: 14,
+              font: { size: 10 },
+              color: '#475569'
+            }
+          },
           datalabels: { display: false }
         },
         scales: {
@@ -897,6 +1017,5 @@
 
 })();
 </script>
-</body>       
+</body>
 </html>
-<!-- Actualización -->
