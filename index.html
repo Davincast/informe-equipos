@@ -45,11 +45,11 @@
 <div id="loaderScreen" class="h-full flex flex-col items-center justify-center px-4">
   <div class="max-w-md w-full text-center">
     <h1 class="text-2xl font-bold text-ink mb-2">Informe Ejecutivo de Equipos</h1>
-    <p class="text-sub text-xs mb-6">Carga el archivo <strong>Analisis pwq.xlsx</strong> (Pestaña <strong>Digitacion</strong>, Tabla <strong>Digitacion_2</strong>) para generar el panel.</p>
+    <p class="text-sub text-xs mb-6">Carga el archivo Excel/CSV para generar el panel en una sola página.</p>
 
     <label id="dropZone" for="fileInput" class="block border-2 border-dashed border-border rounded-xl bg-panel hover:border-cyan/60 transition-all p-8 cursor-pointer">
       <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" class="hidden" />
-      <div class="text-sm text-ink font-semibold">Selecciona o arrastra "Analisis pwq.xlsx"</div>
+      <div class="text-sm text-ink font-semibold">Selecciona o arrastra tu archivo</div>
       <div class="text-xs text-sub mt-1">.xlsx, .xls, .csv</div>
     </label>
 
@@ -270,7 +270,7 @@
 
   function normalizeStr(v){
     return String(v ?? '')
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
       .toLowerCase()
       .replace(/\s+/g, ' ')
       .trim();
@@ -335,29 +335,10 @@
     reader.onload = (e) => {
       try {
         const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
-        
-        // 1. Identificar hoja "Digitacion"
-        const targetSheetName = wb.SheetNames.find(s => normalizeStr(s) === normalizeStr('Digitacion')) || wb.SheetNames[0];
-        const sheet = wb.Sheets[targetSheetName];
-
-        if (!sheet) {
-          showLoadError('No se encontró la pestaña "Digitacion" en el archivo Excel.');
-          return;
-        }
-
-        // 2. Extraer rango de la tabla "Digitacion_2" si existen metadatos de tabla
-        let options = { defval: '', raw: true };
-        if (sheet['!tables'] && Array.isArray(sheet['!tables'])) {
-          const targetTable = sheet['!tables'].find(t => normalizeStr(t.name || t.Name) === normalizeStr('Digitacion_2'));
-          if (targetTable && targetTable.ref) {
-            options.range = targetTable.ref;
-          }
-        }
-
-        const json = XLSX.utils.sheet_to_json(sheet, options);
+        const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '', raw: true });
         processData(json);
       } catch (err) {
-        showLoadError('Error procesando el archivo. Verifica que sea un archivo de Excel válido.');
+        showLoadError('Error procesando el archivo. Verifica que sea un Excel/CSV válido.');
       }
     };
     reader.readAsArrayBuffer(file);
@@ -393,7 +374,7 @@
 
   function processData(json){
     if (!json.length) {
-      showLoadError('La pestaña "Digitacion" o la tabla "Digitacion_2" no contiene datos.');
+      showLoadError('El archivo no contiene datos.');
       return;
     }
 
@@ -467,7 +448,7 @@
     });
 
     if (!rows.length) {
-      showLoadError(`No se encontraron registros en la tabla "Digitacion_2". Revisa la información de tu archivo.`);
+      showLoadError(`No se encontraron registros en el archivo. Revisa el formato de tus datos.`);
       return;
     }
 
