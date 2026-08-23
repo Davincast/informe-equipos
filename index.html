@@ -45,13 +45,12 @@
 <div id="loaderScreen" class="h-full flex flex-col items-center justify-center px-4">
   <div class="max-w-md w-full text-center">
     <h1 class="text-2xl font-bold text-ink mb-2">Informe Ejecutivo de Equipos</h1>
-    <p class="text-sub text-xs mb-6">Carga el archivo Excel/CSV para generar el panel en una sola página.</p>
+    <p class="text-sub text-xs mb-6">Cargando automáticamente <b>Libro1.xlsx</b>...</p>
 
-    <label id="dropZone" for="fileInput" class="block border-2 border-dashed border-border rounded-xl bg-panel hover:border-cyan/60 transition-all p-8 cursor-pointer">
-      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" class="hidden" />
-      <div class="text-sm text-ink font-semibold">Selecciona o arrastra tu archivo</div>
-      <div class="text-xs text-sub mt-1">.xlsx, .xls, .csv</div>
-    </label>
+    <div class="border border-border rounded-xl bg-panel p-8">
+      <div class="text-sm text-ink font-semibold">Conectando con Libro1.xlsx</div>
+      <div class="text-xs text-sub mt-1">El archivo se carga automáticamente desde GitHub.</div>
+    </div>
 
     <div id="loadError" class="hidden mt-3 text-xs text-red bg-red/10 border border-red/30 rounded p-2"></div>
   </div>
@@ -81,7 +80,7 @@
         <select id="filterMes" class="text-xs bg-panel border border-border rounded px-2 py-1 text-ink focus:outline-none focus:border-cyan/60"></select>
       </div>
 
-      <button id="resetBtn" class="text-xs px-2 py-1 rounded border border-border bg-panel hover:border-cyan/60 text-sub transition-colors">Cambiar archivo</button>
+      <button id="resetBtn" class="text-xs px-2 py-1 rounded border border-border bg-panel hover:border-cyan/60 text-sub transition-colors">Recargar Libro1.xlsx</button>
     </div>
   </header>
 
@@ -287,23 +286,65 @@
     $('loadError').classList.add('hidden');
   }
 
-  const dropZone = $('dropZone');
-  const fileInput = $('fileInput');
-
-  ['dragenter','dragover'].forEach(evt => dropZone.addEventListener(evt, e => e.preventDefault()));
-  dropZone.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); });
-  fileInput.addEventListener('change', e => { const f = e.target.files[0]; if (f) handleFile(f); });
+  // ============================================================
+  // CARGA AUTOMÁTICA DE Libro1.xlsx DESDE GITHUB PAGES
+  // IMPORTANTE: Libro1.xlsx debe estar en la misma carpeta que este HTML.
+  // ============================================================
+  const ARCHIVO_EXCEL = './Libro1.xlsx';
 
   $('resetBtn').addEventListener('click', () => {
-    $('dashboard').classList.add('hidden');
-    $('loaderScreen').classList.remove('hidden');
-    clearLoadError();
-    fileInput.value = '';
     selectedEquipo = null;
     selectedTipo = null;
     selectedSemana = null;
     selectedClaseTabla = null;
+    cargarLibro1();
   });
+
+  async function cargarLibro1(){
+    try {
+      clearLoadError();
+      $('dashboard').classList.add('hidden');
+      $('loaderScreen').classList.remove('hidden');
+
+      // Evita que el navegador use una copia vieja del Excel.
+      const url = ARCHIVO_EXCEL + '?v=' + Date.now();
+
+      const response = await fetch(url, { cache: 'no-store' });
+
+      if (!response.ok) {
+        throw new Error(`No se pudo cargar Libro1.xlsx (HTTP ${response.status})`);
+      }
+
+      const buffer = await response.arrayBuffer();
+
+      const wb = XLSX.read(new Uint8Array(buffer), {
+        type: 'array',
+        cellDates: true
+      });
+
+      if (!wb.SheetNames.length) {
+        throw new Error('Libro1.xlsx no contiene hojas.');
+      }
+
+      const primeraHoja = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(primeraHoja, {
+        defval: '',
+        raw: true
+      });
+
+      processData(json);
+
+    } catch (err) {
+      console.error(err);
+      showLoadError(
+        'No se pudo cargar automáticamente Libro1.xlsx. ' +
+        'Verifica que el archivo esté en la misma carpeta del HTML en GitHub y que el nombre sea exactamente Libro1.xlsx.'
+      );
+    }
+  }
+
+  // Cargar automáticamente al abrir la página.
+  window.addEventListener('DOMContentLoaded', cargarLibro1);
 
   window.addEventListener('resize', () => {
     if (!$('dashboard').classList.contains('hidden')) render();
@@ -328,21 +369,6 @@
     selectedClaseTabla = null;
     render();
   });
-
-  function handleFile(file){
-    clearLoadError();
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
-        const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '', raw: true });
-        processData(json);
-      } catch (err) {
-        showLoadError('Error procesando el archivo. Verifica que sea un Excel/CSV válido.');
-      }
-    };
-    reader.readAsArrayBuffer(file);
-  }
 
   function parseHoras(v){
     if (typeof v === 'number') return v;
